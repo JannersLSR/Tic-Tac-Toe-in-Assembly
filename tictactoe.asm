@@ -14,17 +14,48 @@ instruction_message2 db "Tic tac toe is a classic game for two players,$"
 instruction_message3 db "typically played on a 3x3 grid, where players$"
 instruction_message4 db "take turns placing either X or O in the empty squares.$"
 instruction_message5 db "First player to get 3 X's or O's in either$" 
-instruction_message6 db "horizontal, vertical, or diagonal line wins!$"
+instruction_message6 db "a horizontal, vertical, or diagonal line wins!$"
 instruction_message7 db "Press any key to return to Main Menu$"
 exit_message db "Thank you for playing!$" 
 
 start_input db 0
 
+play_message1 db "Let's Play TIC TAC TOE!$"
+
+
+; tic tac toe logic
+line1 db "|$"
+line2 db "-----------$"
+
+cell1 db " 1 $"   
+cell2 db " 2 $"   
+cell3 db " 3 $"  
+cell4 db " 4 $"   
+cell5 db " 5 $"   
+cell6 db " 6 $"  
+cell7 db " 7 $"  
+cell8 db " 8 $"  
+cell9 db " 9 $"
+
+p1 db "Player 1's turn (X)$"
+p2 db "Player 2's turn (O)$"
+cell_input db "Enter a cell # $"
+
+
+; inputs ng players
+player_turn db 0
+p1_input db 0
+p2_input db 0
+
+ 
+
+
+
 
 .code
  
 menu_loop:
-    ; ishtart iscreen
+    ; ishtart ishcreen
     call clear
     
     call newline
@@ -58,7 +89,7 @@ menu_loop:
     call newline
     call newline
     
-    call player_input
+    call menu_input
     
     call newline
         
@@ -77,6 +108,28 @@ menu_loop:
 
 ;start game    
 start_game:
+    call clear
+    
+    mov ah, 09h
+    lea dx, play_message1
+    int 21h
+    
+    call newline
+    call newline
+    
+    call generate_grid
+    
+    call players_turn
+    
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, cell_input
+    int 21h
+    
+    
+    
     jmp menu_loop
 
 ;how to play
@@ -131,7 +184,6 @@ end_game:
     
 ;clear screen
 clear:
-
     mov ah, 06h
     mov al, 00h
     mov bh, 07h
@@ -141,7 +193,7 @@ clear:
     ret
     
 ;player input    
-player_input:
+menu_input:
     lea dx, start_input
     mov ah, 01h
     int 21h
@@ -158,5 +210,354 @@ newline:
     mov dl, 0dh
     int 21h
     ret
+    
+; player turns
+players_turn:
+    cmp byte ptr [player_turn], 0
+    je p1_turn
+    cmp byte ptr [player_turn], 1
+    je p2_turn
+    
+
+p1_turn:
+    mov ah, 09h
+    lea dx, p1
+    int 21h
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, cell_input
+    int 21h
+    
+    mov ah, 01h
+    int 21h
+    
+    mov [p1_input], al
+    
+    mov byte ptr [player_turn], 1
+    
+    call clear
+    
+    call newline
+    
+    call update_grid_x
+    
+    jmp players_turn
+    
+p2_turn:
+    mov ah, 09h
+    lea dx, p2
+    int 21h
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, cell_input
+    int 21h
+    
+    mov ah, 01h
+    int 21h
+    
+    mov [p2_input], al
+    
+    mov byte ptr [player_turn], 0
+    
+    call clear
+    
+    call newline
+    
+    call update_grid_o
+    
+    jmp players_turn    
+    
+    
+
+
+; generate grid
+generate_grid:
+    mov ah, 09h
+    lea dx, cell1
+    int 21h
+    
+    lea dx, line1
+    int 21h
+    
+    lea dx, cell2
+    int 21h
+    
+    lea dx, line1
+    int 21h
+    
+    lea dx, cell3
+    int 21h
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, line2
+    int 21h
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, cell4
+    int 21h
+    
+    lea dx, line1
+    int 21h
+    
+    lea dx, cell5
+    int 21h
+    
+    lea dx, line1
+    int 21h
+    
+    lea dx, cell6
+    int 21h
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, line2
+    int 21h
+    
+    call newline
+    
+    mov ah, 09h
+    lea dx, cell7
+    int 21h
+    
+    lea dx, line1
+    int 21h
+    
+    lea dx, cell8
+    int 21h
+    
+    lea dx, line1
+    int 21h
+    
+    lea dx, cell9
+    int 21h
+    
+    call newline
+    call newline
+    
+    ret
+    
+; update grid X
+update_grid_x:
+    cmp byte ptr [p1_input], "1"
+    je update_cell1_x
+    
+    cmp byte ptr [p1_input], "2"
+    je update_cell2_x
+    
+    cmp byte ptr [p1_input], "3"
+    je update_cell3_x
+    
+    cmp byte ptr [p1_input], "4"
+    je update_cell4_x
+    
+    cmp byte ptr [p1_input], "5"
+    je update_cell5_x
+    
+    cmp byte ptr [p1_input], "6"
+    je update_cell6_x
+    
+    cmp byte ptr [p1_input], "7"
+    je update_cell7_x
+    
+    cmp byte ptr [p1_input], "8"
+    je update_cell8_x
+    
+    cmp byte ptr [p1_input], "9"
+    je update_cell9_x
+    
+    mov byte ptr [p1_input], 0
+    jmp players_turn
+    
+    
+; update cells
+update_cell1_x:
+    lea di, cell1
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+update_cell2_x:
+    lea di, cell2
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell3_x:
+    lea di, cell3
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+update_cell4_x:
+    lea di, cell4
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell5_x:
+    lea di, cell5
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+update_cell6_x:
+    lea di, cell6
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell7_x:
+    lea di, cell7
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell8_x:
+    lea di, cell8
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell9_x:
+    lea di, cell9
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "X"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+    
+; update grid O
+update_grid_o:
+    cmp byte ptr [p2_input], "1"
+    je update_cell1_o
+    
+    cmp byte ptr [p2_input], "2"
+    je update_cell2_o
+    
+    cmp byte ptr [p2_input], "3"
+    je update_cell3_o
+    
+    cmp byte ptr [p2_input], "4"
+    je update_cell4_o
+    
+    cmp byte ptr [p2_input], "5"
+    je update_cell5_o
+    
+    cmp byte ptr [p2_input], "6"
+    je update_cell6_o
+    
+    cmp byte ptr [p2_input], "7"
+    je update_cell7_o
+    
+    cmp byte ptr [p2_input], "8"
+    je update_cell8_o
+    
+    cmp byte ptr [p2_input], "9"
+    je update_cell9_o
+    
+    mov byte ptr [p2_input], 0
+    jmp players_turn
+    
+    
+; update cells
+update_cell1_o:
+    lea di, cell1
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+update_cell2_o:
+    lea di, cell2
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell3_o:
+    lea di, cell3
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+update_cell4_o:
+    lea di, cell4
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell5_o:
+    lea di, cell5
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret
+update_cell6_o:
+    lea di, cell6
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell7_o:
+    lea di, cell7
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell8_o:
+    lea di, cell8
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret 
+update_cell9_o:
+    lea di, cell9
+    mov byte ptr [di], " "
+    mov byte ptr [di+1], "O"
+    mov byte ptr [di+2], " "
+    mov byte ptr [di+3], "$"
+    call generate_grid
+    ret                          
+    
 
     
