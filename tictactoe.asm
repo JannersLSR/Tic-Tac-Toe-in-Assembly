@@ -18,6 +18,7 @@ instruction_message6 db "a horizontal, vertical, or diagonal line wins!$"
 instruction_message7 db "Press any key to return to Main Menu$"
 exit_message db "Thank you for playing!$" 
 
+
 start_input db 0
 
 play_message1 db "Let's Play TIC TAC TOE!$"
@@ -38,7 +39,11 @@ cell9 db " 9 $"
 
 p1 db "Player 1's turn (X)$"
 p2 db "Player 2's turn (O)$"
-cell_input db "Enter a cell # $" 
+cell_input db "Enter a cell # $"  
+
+win_message1 db "Player 1 wins the game!$"
+win_message2 db "Player 2 wins the game!$"
+tie_message db "It's a Tie!$"
 
 cell_error db "Invalid Cell Number!$"
 
@@ -56,7 +61,7 @@ p2_input db 0
 .code
  
 menu_loop:
-    ; ishtart ishcreen
+    ; Menu loop
     call clear
     
     call newline
@@ -93,8 +98,6 @@ menu_loop:
     call menu_input
     
     call newline
-        
-    ;test if 1, 2, or 3
 
     cmp byte ptr [start_input], '1'
     je start_game
@@ -102,7 +105,7 @@ menu_loop:
     je show_instruction
     cmp byte ptr [start_input], '3'
     je end_game  
-    ;else natin to
+
     mov byte ptr [start_input], 0
     jmp menu_loop
      
@@ -110,6 +113,8 @@ menu_loop:
 ;start game    
 start_game:
     call clear
+    call reset_cell_flags
+    call newline
     
     mov ah, 09h
     lea dx, play_message1
@@ -171,18 +176,7 @@ show_instruction:
     
     jmp menu_loop
     
-
-;end game    
-end_game:
-    call clear
-    
-    call newline
-    
-    mov ah, 09h
-    lea dx, exit_message
-    int 21h
-    int 20h
-    
+   
 ;clear screen
 clear:
     mov ah, 06h
@@ -212,69 +206,65 @@ newline:
     int 21h
     ret
     
-; player turns
+; player turns   
 players_turn:
     cmp byte ptr [player_turn], 0
     je p1_turn
     cmp byte ptr [player_turn], 1
     je p2_turn
-    
 
 p1_turn:
+    ; Player 1's move (X)
     mov ah, 09h
     lea dx, p1
     int 21h
-    
+
     call newline
-    
     mov ah, 09h
     lea dx, cell_input
     int 21h
-    
+
     mov ah, 01h
     int 21h
-    
     mov [p1_input], al
-    
-    mov byte ptr [player_turn], 1
-    
+
+    ; Update grid for X
     call clear
-    
     call newline
-    
     call update_grid_x
-    
+
+    ; Check for win after player 1's move
+    call check_win
+
+    mov byte ptr [player_turn], 1
     jmp players_turn
-    
+
 p2_turn:
+    ; Player 2's move (O)
     mov ah, 09h
     lea dx, p2
     int 21h
-    
+
     call newline
-    
     mov ah, 09h
     lea dx, cell_input
     int 21h
-    
+
     mov ah, 01h
     int 21h
-    
     mov [p1_input], al
-    
-    mov byte ptr [player_turn], 0
-    
+
+    ; Update grid for O
     call clear
-    
     call newline
-    
     call update_grid_o
-    
-    jmp players_turn    
-    
-    
 
+    ; Check for win after player 2's move
+    call check_win
 
+    mov byte ptr [player_turn], 0
+    jmp players_turn
+    
 ; generate grid
 generate_grid:
     mov ah, 09h
@@ -443,9 +433,7 @@ check_cell9_x:
     je update_cell9_x
     call cell_occupied_x
     jmp players_turn
-
-    
-    
+   
 ; update cells X
 update_cell1_x:
     lea di, cell1
@@ -528,9 +516,7 @@ update_cell9_x:
     mov byte ptr [cell_flag+8], 1
     call generate_grid
     ret
-    
-    
-    
+        
 ; update grid O
 update_grid_o:
     cmp byte ptr [p1_input], "1"
@@ -560,7 +546,7 @@ update_grid_o:
     cmp byte ptr [p1_input], "9"
     je check_cell9_o
 
-    ; error handling ng update grid
+    ; error handling of update grid
     mov ah, 09h
     lea dx, cell_error
     int 21h
@@ -739,4 +725,191 @@ cell_occupied_o:
     
     mov byte ptr [player_turn], 1
     
-    ret
+    ret   
+        
+check_win:
+    ; Check if Player 1 (X) wins - First row
+    cmp byte ptr [cell_flag], 1
+    jne check_row1_p2
+    cmp byte ptr [cell_flag+1], 1
+    jne check_row1_p2
+    cmp byte ptr [cell_flag+2], 1
+    je declare_win  ; Player 1 wins
+
+check_row1_p2:
+    ; Check if Player 2 (O) wins - First row
+    cmp byte ptr [cell_flag], 2
+    jne check_row2_p1
+    cmp byte ptr [cell_flag+1], 2
+    jne check_row2_p1
+    cmp byte ptr [cell_flag+2], 2
+    je declare_win_o  ; Player 2 wins
+
+check_row2_p1:
+    ; Check if Player 1 (X) wins - Second row
+    cmp byte ptr [cell_flag+3], 1
+    jne check_row2_p2
+    cmp byte ptr [cell_flag+4], 1
+    jne check_row2_p2
+    cmp byte ptr [cell_flag+5], 1
+    je declare_win  ; Player 1 wins
+
+check_row2_p2:
+    ; Check if Player 2 (O) wins - Second row
+    cmp byte ptr [cell_flag+3], 2
+    jne check_row3_p1
+    cmp byte ptr [cell_flag+4], 2
+    jne check_row3_p1
+    cmp byte ptr [cell_flag+5], 2
+    je declare_win_o  ; Player 2 wins
+
+check_row3_p1:
+    ; Check if Player 1 (X) wins - Third row
+    cmp byte ptr [cell_flag+6], 1
+    jne check_row3_p2
+    cmp byte ptr [cell_flag+7], 1
+    jne check_row3_p2
+    cmp byte ptr [cell_flag+8], 1
+    je declare_win  ; Player 1 wins
+
+check_row3_p2:
+    ; Check if Player 2 (O) wins - Third row
+    cmp byte ptr [cell_flag+6], 2
+    jne check_col1_p1
+    cmp byte ptr [cell_flag+7], 2
+    jne check_col1_p1
+    cmp byte ptr [cell_flag+8], 2
+    je declare_win_o  ; Player 2 wins
+
+check_col1_p1:
+    ; Check if Player 1 (X) wins - First column
+    cmp byte ptr [cell_flag], 1
+    jne check_col1_p2
+    cmp byte ptr [cell_flag+3], 1
+    jne check_col1_p2
+    cmp byte ptr [cell_flag+6], 1
+    je declare_win  ; Player 1 wins
+
+check_col1_p2:
+    ; Check if Player 2 (O) wins - First column
+    cmp byte ptr [cell_flag], 2
+    jne check_col2_p1
+    cmp byte ptr [cell_flag+3], 2
+    jne check_col2_p1
+    cmp byte ptr [cell_flag+6], 2
+    je declare_win_o  ; Player 2 wins
+
+check_col2_p1:
+    ; Check if Player 1 (X) wins - Second column
+    cmp byte ptr [cell_flag+1], 1
+    jne check_col2_p2
+    cmp byte ptr [cell_flag+4], 1
+    jne check_col2_p2
+    cmp byte ptr [cell_flag+7], 1
+    je declare_win  ; Player 1 wins
+
+check_col2_p2:
+    ; Check if Player 2 (O) wins - Second column
+    cmp byte ptr [cell_flag+1], 2
+    jne check_col3_p1
+    cmp byte ptr [cell_flag+4], 2
+    jne check_col3_p1
+    cmp byte ptr [cell_flag+7], 2
+    je declare_win_o  ; Player 2 wins
+
+check_col3_p1:
+    ; Check if Player 1 (X) wins - Third column
+    cmp byte ptr [cell_flag+2], 1
+    jne check_col3_p2
+    cmp byte ptr [cell_flag+5], 1
+    jne check_col3_p2
+    cmp byte ptr [cell_flag+8], 1
+    je declare_win  ; Player 1 wins
+
+check_col3_p2:
+    ; Check if Player 2 (O) wins - Third column
+    cmp byte ptr [cell_flag+2], 2
+    jne check_diag1_p1
+    cmp byte ptr [cell_flag+5], 2
+    jne check_diag1_p1
+    cmp byte ptr [cell_flag+8], 2
+    je declare_win_o  ; Player 2 wins
+
+check_diag1_p1:
+    ; Check if Player 1 (X) wins - Main diagonal
+    cmp byte ptr [cell_flag], 1
+    jne check_diag1_p2
+    cmp byte ptr [cell_flag+4], 1
+    jne check_diag1_p2
+    cmp byte ptr [cell_flag+8], 1
+    je declare_win  ; Player 1 wins
+
+check_diag1_p2:
+    ; Check if Player 2 (O) wins - Main diagonal
+    cmp byte ptr [cell_flag], 2
+    jne check_diag2_p1
+    cmp byte ptr [cell_flag+4], 2
+    jne check_diag2_p1
+    cmp byte ptr [cell_flag+8], 2
+    je declare_win_o  ; Player 2 wins
+
+check_diag2_p1:
+    ; Check if Player 1 (X) wins - Secondary diagonal
+    cmp byte ptr [cell_flag+2], 1
+    jne check_diag2_p2
+    cmp byte ptr [cell_flag+4], 1
+    jne check_diag2_p2
+    cmp byte ptr [cell_flag+6], 1
+    je declare_win  ; Player 1 wins
+
+check_diag2_p2:
+    ; Check if Player 2 (O) wins - Secondary diagonal
+    cmp byte ptr [cell_flag+2], 2
+    jne no_win
+    cmp byte ptr [cell_flag+4], 2
+    jne no_win
+    cmp byte ptr [cell_flag+6], 2
+    je declare_win_o  ; Player 2 wins
+
+no_win:
+    mov cx, 9            
+    lea si, [cell_flag]  
+    mov bx, 0            
+
+check_cells:
+    cmp byte ptr [si], 0  
+    je no_winner         
+    inc bx               
+    inc si                
+    loop check_cells      
+
+    cmp bx, 9            
+    je declare_tie       
+
+no_winner:
+    ret  ; No winner, continue the game
+
+declare_win:
+    mov ah, 09h
+    lea dx, win_message1
+    int 21h
+    jmp end_game
+
+declare_win_o:
+    mov ah, 09h
+    lea dx, win_message2 
+    int 21h
+    jmp end_game
+
+declare_tie:
+    mov ah, 09h
+    lea dx, tie_message   
+    int 21h
+    jmp end_game
+
+end_game:
+    call newline
+    mov ah, 09h
+    lea dx, exit_message
+    int 21h
+    int 20h
