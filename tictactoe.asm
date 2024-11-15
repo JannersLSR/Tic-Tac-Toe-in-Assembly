@@ -113,7 +113,6 @@ menu_loop:
 ;start game    
 start_game:
     call clear
-    call reset_cell_flags
     call newline
     
     mov ah, 09h
